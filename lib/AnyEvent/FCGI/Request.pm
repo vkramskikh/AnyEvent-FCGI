@@ -22,7 +22,8 @@ AnyEvent::FCGI::Request - a single FastCGI request handle for L<AnyEvent::FCGI>
             $request->respond(
                 'Hello, ' . (CGI::param('name') || 'anonymous'),
                 'Content-Type' => 'text/html; charset=utf8',
-                'Set-Cookie' => 'visited=1; path=/',
+                'Set-Cookie' => 'cookie_a=1; path=/',
+                'Set-Cookie' => 'cookie_b=2; path=/',
             );
         }
     );
@@ -269,7 +270,7 @@ sub finish {
     }
 }
 
-=head2 respond($content, %headers)
+=head2 respond($content, @headers)
 
 This method sends the response to the webserver and finishes the request.
 HTTP reply code can be specified in C<Status> header (200 by default).
