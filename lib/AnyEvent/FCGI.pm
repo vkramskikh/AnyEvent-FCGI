@@ -8,7 +8,7 @@ AnyEvent::FCGI - non-blocking FastCGI server
 
     use AnyEvent;
     use AnyEvent::FCGI;
-    
+
     my $fcgi = new AnyEvent::FCGI(
         port => 9000,
         on_request => sub {
@@ -19,7 +19,7 @@ AnyEvent::FCGI - non-blocking FastCGI server
             );
         }
     );
-    
+
     my $timer = AnyEvent->timer(
         after => 10,
         interval => 0,
@@ -28,7 +28,7 @@ AnyEvent::FCGI - non-blocking FastCGI server
             $fcgi = undef;
         }
     );
-    
+
     AnyEvent->loop;
 
 =head1 DESCRIPTION
@@ -40,7 +40,7 @@ This module implements non-blocking FastCGI server for event based applications.
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use Scalar::Util qw/weaken refaddr/;
 
@@ -100,51 +100,56 @@ It will be invoked as
 
 where C<$request> will be a new L<AnyEvent::FCGI::Request> object.
 
+=item backlog => $backlog
+
+Optional. Integer number of socket backlog (listen queue)
+
 =back
 
 =cut
 
 sub new {
     my ($class, %params) = @_;
-    
+
     my $self = bless {
         connections => {},
         on_request_cb => $params{on_request},
     }, $class;
-    
+
     my $fcgi = $self;
     weaken($fcgi);
-    
+
     $params{socket} ||= $params{unix};
-    
+
     $self->{server} = tcp_server(
         $params{socket} ? 'unix/' : $params{host},
         $params{socket} || $params{port},
-        sub {$fcgi->_on_accept(shift)}
+        sub {$fcgi->_on_accept(shift)},
+        $params{backlog} ? sub {$params{backlog}} : undef
     );
-    
+
     return $self;
 }
 
 sub _on_accept {
     my ($self, $fh) = @_;
-    
+
     if ($fh) {
         my $connection = new AnyEvent::FCGI::Connection(fcgi => $self, fh => $fh);
-        
+
         $self->{connections}->{refaddr($connection)} = $connection;
     }
 }
 
 sub _request_ready {
     my ($self, $request) = @_;
-    
+
     $self->{on_request_cb}->($request);
 }
 
 sub DESTROY {
     my ($self) = @_;
-    
+
     if ($self) {
         $self->{connections} = {};
     }
